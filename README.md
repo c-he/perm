@@ -28,7 +28,7 @@
         <a href="https://arxiv.org/abs/2307.09481"><img src='https://img.shields.io/badge/arXiv-Perm-red' alt='Paper PDF'></a>
         <a href='https://ali-vilab.github.io/AnyDoor-Page/'><img src='https://img.shields.io/badge/Project_Page-Perm-green' alt='Project Page'></a>
     <br>
-    <b><sup>1</sup>Yale University &nbsp; | &nbsp;  <sup>2</sup>Adobe Research  | &nbsp;  <sup>3</sup>CAU  | &nbsp;  <sup>4</sup>KAUST  | &nbsp;  <sup>5</sup>Nanjing University of Science and Technology </b>
+    <b><sup>1</sup>Yale University &nbsp; | &nbsp;  <sup>2</sup>Adobe Research &nbsp; | &nbsp;  <sup>3</sup>CAU &nbsp; | &nbsp;  <sup>4</sup>KAUST &nbsp; | &nbsp;  <sup>5</sup>Nanjing University of Science and Technology </b>
   </p>
   
   <table align="center">
