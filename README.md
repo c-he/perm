@@ -1,6 +1,6 @@
 <p align="center">
 
-  <h2 align="center">Perm: A Parametric Representation for Multi-Style 3D Hair Modeling</h2>
+  <h2 align="center"><p><span style="smallcaps">Perm</span>: A Parametric Representation for Multi-Style 3D Hair Modeling</h2>
   <p align="center">
     <a href="https://xavierchen34.github.io/"><strong>Chengan He<sup>1</sup></strong></a>
     ·
