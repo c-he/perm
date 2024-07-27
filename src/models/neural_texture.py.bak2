@@ -1,0 +1,336 @@
+import os
+
+import pytorch_lightning as pl
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from pytorch_lightning.utilities import rank_zero_only
+
+from hair import HairRoots, Strands, save_hair
+from models.loss import StrandReconstructionLoss
+from models.module import ModSIREN, TextureDecoder, TextureEncoder, Transformer
+from models.strand_codec import StrandCodec
+from utils.blend_shape import sample
+from utils.metric import export_csv, hair_reconstruction_metrics
+from utils.misc import copy2cpu as c2c
+from utils.misc import load_checkpoint
+from utils.visualize import write_texture
+
+
+class NeuralTextureCodec(pl.LightningModule):
+    def __init__(self, args):
+        super().__init__()
+        self.save_hyperparameters(args)
+
+        self.encoder = TextureEncoder(in_features=args.encoder.in_features,
+                                      out_features=args.encoder.out_features,
+                                      hidden_features=args.encoder.hidden_features,
+                                      kernel_size=args.encoder.kernel_size,
+                                      pooling=args.encoder.pooling,
+                                      spatial=args.encoder.spatial,
+                                      batch_norm=args.encoder.batch_norm,
+                                      nonlinearity=args.encoder.nonlinearity
+                                      )
+
+        conditioning = args.texture.get('conditioning', None)
+        if conditioning is None:
+            self.texture = TextureDecoder(in_features=args.encoder.out_features,
+                                          out_features=args.texture.out_features,
+                                          hidden_features=args.texture.hidden_features,
+                                          kernel_size=args.texture.kernel_size,
+                                          spatial=args.encoder.spatial,
+                                          bilinear=args.texture.bilinear,
+                                          batch_norm=args.texture.batch_norm,
+                                          nonlinearity=args.texture.nonlinearity
+                                          )
+        else:
+            if conditioning == 'concatenation':
+                self.texture = ModSIREN(in_features=2,
+                                        out_features=args.texture.out_features,
+                                        hidden_layers=args.texture.hidden_layers,
+                                        hidden_features=args.texture.hidden_features,
+                                        latent_dim=args.encoder.out_features,
+                                        concat=False,
+                                        synthesis_layer_norm=args.texture.synthesis_layer_norm,
+                                        modulator_layer_norm=False,
+                                        synthesis_nonlinearity=args.texture.synthesis_nonlinearity,
+                                        modulator_nonlinearity=None,
+                                        pos_embed=args.texture.pos_embed,
+                                        num_freqs=args.texture.num_freqs,
+                                        freq_scale=args.texture.freq_scale
+                                        )
+            elif conditioning == 'modulation':
+                self.texture = ModSIREN(in_features=2,
+                                        out_features=args.texture.out_features,
+                                        hidden_layers=args.texture.hidden_layers,
+                                        hidden_features=args.texture.hidden_features,
+                                        latent_dim=args.encoder.out_features,
+                                        concat=args.texture.concat,
+                                        synthesis_layer_norm=args.texture.synthesis_layer_norm,
+                                        modulator_layer_norm=args.texture.modulator_layer_norm,
+                                        synthesis_nonlinearity=args.texture.synthesis_nonlinearity,
+                                        modulator_nonlinearity=args.texture.modulator_nonlinearity,
+                                        pos_embed=args.texture.pos_embed,
+                                        num_freqs=args.texture.num_freqs,
+                                        freq_scale=args.texture.freq_scale
+                                        )
+            elif conditioning == 'attention':
+                self.texture = Transformer(in_features=2,
+                                           out_features=args.texture.out_features,
+                                           num_attention_layers=args.texture.num_attention_layers,
+                                           token_dim=args.texture.token_dim,
+                                           num_heads=args.texture.num_heads,
+                                           dim_head=args.texture.dim_head,
+                                           self_attention=args.texture.self_attention,
+                                           offset_attention=args.texture.offset_attention,
+                                           pre_norm=args.texture.pre_norm,
+                                           admin_init=args.texture.admin_init,
+                                           pos_embed=args.texture.pos_embed,
+                                           num_freqs=args.texture.num_freqs,
+                                           freq_scale=args.texture.freq_scale
+                                           )
+            else:
+                raise NotImplementedError(f'Found an unsupported latent conditioning method: {conditioning}')
+
+        if args.strand.strand_repr == 'feature':
+            self.strand_codec = load_checkpoint(StrandCodec, args.dataset.codec_ckpt)
+            self.strand_codec.eval()
+            self.strand_codec.freeze()
+
+        self.criterion_strand = StrandReconstructionLoss(cos_angle=True, reduction='mean')
+        self.criterion_recon = nn.L1Loss(reduction='mean')
+
+        self.validation_step_outputs = dict()
+
+    def forward(self, coords, texture, decode_strands=False):
+        embedding, mean, logvar = self.encode(texture)
+        output = self.decode(coords, embedding, decode_strands)
+        output.update({'mean': mean, 'logvar': logvar})
+
+        return output
+
+    def reparameterize(self, mean, logvar):
+        eps = torch.randn_like(mean)
+        std = torch.exp(0.5 * logvar)
+
+        return mean + eps * std
+
+    def encode(self, texture):
+        mean, logvar = self.encoder(texture)
+        if self.hparams.encoder['deterministic'] is True:
+            embedding = mean + 0.0 * logvar
+        else:
+            embedding = self.reparameterize(mean, logvar)
+
+        return embedding, mean, logvar
+
+    def decode(self, coords, embedding, decode_strands=False):
+        B, N = coords.shape[:2]
+        conditioning = self.hparams.texture.get('conditioning', None)
+        if conditioning is None:
+            texture = self.texture(embedding)
+            texture = sample(coords, texture, mode=self.hparams.texture['interp_mode'])
+        else:
+            if embedding.ndim == 4:  # a spatial texture is encoded as the embedding (N, C, H, W), sample it to obtain an embedding for each point
+                embedding = sample(coords, embedding, mode=self.hparams.texture['interp_mode'])
+            texture = self.texture(coords, embedding)
+
+        output = {'texture': texture}
+        if decode_strands:
+            strand_repr = self.hparams.strand['strand_repr']
+            if strand_repr == 'feature':
+                strands = self.strand_codec.decode(texture.reshape(B * N, -1))
+                output['strands'] = strands.reshape(B, N)
+            else:
+                texture = texture.reshape(B, N, self.hparams.strand['samples_per_strand'], -1)
+                global_rot = self.hparams.strand.get('global_rot', False)
+                output['strands'] = Strands.from_tensor(texture, strand_repr, global_rot)
+
+        return output
+
+    def kl_loss(self, mean, logvar):
+        loss = -0.5 * torch.sum(1 + logvar - mean.pow(2) - logvar.exp(), dim=1)
+
+        return loss.mean()
+
+    def on_train_start(self):
+        self.hair_roots = HairRoots(head_mesh=self.hparams.dataset['head_mesh'], scalp_bounds=self.hparams.dataset['scalp_bounds'])
+
+    def training_step(self, batch, batch_idx):
+        coords = self.hair_roots.scale(batch['root'][..., :2])
+        output = self(coords, batch['texture'], decode_strands=self.hparams.texture['decode_strands'])
+
+        terms = dict()
+        if 'strands' in output:
+            texture_type = self.hparams.texture['type']
+            if texture_type == 'local':
+                position = F.pad(batch['position_local'], (0, 0, 1, 0), mode='constant', value=0)
+                rotation = batch['rotation_local']
+                length = batch['length_local']
+                residual = None
+            elif texture_type == 'guide':
+                position = F.pad(batch['position_guide'], (0, 0, 1, 0), mode='constant', value=0)
+                rotation = batch['rotation_guide']
+                length = batch['length_guide']
+                residual = None
+            elif texture_type == 'residual':
+                position = None
+                rotation = None
+                length = None
+                residual = batch['residual_local']
+            else:
+                position = F.pad(batch['position'], (0, 0, 1, 0), mode='constant', value=0)
+                rotation = batch['rotation']
+                length = batch['length']
+                residual = None
+            gt_strands = Strands(position=position, rotation=rotation, length=length, residual=residual)
+            terms.update(self.criterion_strand(output['strands'], gt_strands))
+
+        gt_texture = sample(coords, batch['texture'], mode=self.hparams.texture['interp_mode'])
+        terms.update({'tex': self.criterion_recon(output['texture'], gt_texture)})
+
+        if self.hparams.encoder['deterministic'] is False:
+            terms.update({'kl': self.kl_loss(output['mean'], output['logvar'])})
+
+        loss = 0
+        for k, v in terms.items():
+            loss += self.hparams.optimizer[f'lambda_{k}'] * v
+            self.log(f'{k}', v, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        coords = self.hair_roots.scale(batch['root'][..., :2])
+        output = self(coords, batch['texture'], decode_strands=self.hparams.texture['decode_strands'])
+
+        terms = dict()
+        if 'strands' in output:
+            texture_type = self.hparams.texture['type']
+            if texture_type == 'local':
+                position = F.pad(batch['position_local'], (0, 0, 1, 0), mode='constant', value=0)
+                rotation = batch['rotation_local']
+                length = batch['length_local']
+                residual = None
+            elif texture_type == 'guide':
+                position = F.pad(batch['position_guide'], (0, 0, 1, 0), mode='constant', value=0)
+                rotation = batch['rotation_guide']
+                length = batch['length_guide']
+                residual = None
+            elif texture_type == 'residual':
+                position = None
+                rotation = None
+                length = None
+                residual = batch['residual_local']
+            else:
+                position = F.pad(batch['position'], (0, 0, 1, 0), mode='constant', value=0)
+                rotation = batch['rotation']
+                length = batch['length']
+                residual = None
+            gt_strands = Strands(position=position, rotation=rotation, length=length, residual=residual)
+            terms.update(self.criterion_strand(output['strands'], gt_strands))
+
+            if output['strands'].residual is not None and gt_strands.residual is not None:
+                pos_diff = torch.norm(output['strands'].residual - gt_strands.residual, dim=-1).mean(dim=(1, 2))
+            else:
+                pos_diff = torch.norm(output['strands'].position - gt_strands.position, dim=-1).mean(dim=(1, 2))
+            if 'pos_diff' not in self.validation_step_outputs:
+                self.validation_step_outputs['pos_diff'] = []
+            self.validation_step_outputs['pos_diff'].append(pos_diff)
+
+        gt_texture = sample(coords, batch['texture'], mode=self.hparams.texture['interp_mode'])
+        terms.update({'tex': self.criterion_recon(output['texture'], gt_texture)})
+
+        if self.hparams.encoder['deterministic'] is False:
+            terms.update({'kl': self.kl_loss(output['mean'], output['logvar'])})
+
+        loss = 0
+        for k, v in terms.items():
+            loss += self.hparams.optimizer[f'lambda_{k}'] * v
+        if 'val_loss' not in self.validation_step_outputs:
+            self.validation_step_outputs['val_loss'] = []
+        self.validation_step_outputs['val_loss'].append(loss.unsqueeze(0))
+
+    def on_validation_epoch_end(self):
+        val_loss = torch.cat(self.validation_step_outputs['val_loss']).mean()
+        self.log('val_loss', val_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.validation_step_outputs['val_loss'].clear()
+        if 'pos_diff' in self.validation_step_outputs:
+            pos_diff = torch.cat(self.validation_step_outputs['pos_diff']).mean()
+            self.log('pos_diff', pos_diff, on_epoch=True, prog_bar=True, sync_dist=True)
+            self.validation_step_outputs['pos_diff'].clear()
+
+    def write_texture(self, gt_texture, prefix, resolution):
+        u, v = torch.meshgrid(torch.linspace(0, 1, steps=resolution, device=gt_texture.device),
+                              torch.linspace(0, 1, steps=resolution, device=gt_texture.device), indexing='ij')
+        coords = torch.dstack((u, v)).reshape(-1, 2)  # (W x H, 2)
+        texture = self(coords.unsqueeze(0), gt_texture, decode_strands=False)['texture']  # (1, W x H, C)
+        texture = texture.reshape(1, resolution, resolution, -1)  # (1, W, H, C)
+
+        write_texture(f'{prefix}_recon.png', texture[0].permute(1, 0, 2))
+        write_texture(f'{prefix}_gt.png', gt_texture[0].permute(1, 2, 0))
+
+    def on_test_start(self):
+        self.test_dir = os.path.join(self.logger.log_dir, 'test')
+        os.makedirs(self.test_dir, exist_ok=True)
+        self.test_step_outputs = dict()
+        self.hair_roots = HairRoots(head_mesh=self.hparams.dataset['head_mesh'], scalp_bounds=self.hparams.dataset['scalp_bounds'])
+
+    @rank_zero_only
+    def test_step(self, batch, batch_idx):
+        coords = self.hair_roots.scale(batch['root'][..., :2])
+        texture_type = self.hparams.texture['type']
+        if texture_type == 'local':
+            local_strands = self(coords, batch['texture'], decode_strands=True)['strands']
+            local_strands.residual = batch['residual_local']
+            guide_strands = Strands(rotation=batch['rotation_guide'], length=batch['length_guide'])
+            recon_strands = local_strands.to_world(guide_strands)
+        elif texture_type == 'guide':
+            position_local = F.pad(batch['position_local'], (0, 0, 1, 0), mode='constant', value=0)
+            local_strands = Strands(position=position_local, rotation=batch['rotation_local'], length=batch['length_local'], residual=batch['residual_local'])
+            guide_strands = self(coords, batch['texture'], decode_strands=True)['strands']
+            recon_strands = local_strands.to_world(guide_strands)
+        elif texture_type == 'residual':
+            position_local = F.pad(batch['position_local'], (0, 0, 1, 0), mode='constant', value=0)
+            local_strands = Strands(position=position_local, rotation=batch['rotation_local'], length=batch['length_local'])
+            residual_strands = self(coords, batch['texture'], decode_strands=True)['strands']
+            local_strands.residual = residual_strands.residual
+            guide_strands = Strands(rotation=batch['rotation_guide'], length=batch['length_guide'])
+            recon_strands = local_strands.to_world(guide_strands)
+        else:
+            recon_strands = self(coords, batch['texture'], decode_strands=True)['strands']
+
+        x0 = self.hair_roots.spherical_to_cartesian(batch['root'])  # (B, N, 3)
+        position = recon_strands.position + x0.unsqueeze(2)
+        position_gt = F.pad(batch['position'], (0, 0, 1, 0), mode='constant', value=0)
+        position_gt = position_gt + x0.unsqueeze(2)
+        metric = hair_reconstruction_metrics(c2c(position), c2c(position_gt))
+        for k, v in metric.items():
+            if k in self.test_step_outputs:
+                self.test_step_outputs[k].append(v)
+            else:
+                self.test_step_outputs[k] = [v]
+
+        if batch_idx <= 15:
+            batch_size = x0.shape[0]
+            for i in range(batch_size):
+                save_hair(os.path.join(self.test_dir, f'hair_{batch_idx * batch_size + i:05d}_gt.ply'), c2c(position_gt[i]))
+                save_hair(os.path.join(self.test_dir, f'hair_{batch_idx * batch_size + i:05d}_recon.ply'), c2c(position[i]))
+                self.write_texture(batch['texture'], os.path.join(self.test_dir, f'hair_{batch_idx * batch_size + i:05d}'), self.hparams.texture['texture_size'])
+
+    @rank_zero_only
+    def on_test_epoch_end(self):
+        export_csv(os.path.join(self.test_dir, 'metrics.csv'), self.test_step_outputs)
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.optimizer['lr'], weight_decay=self.hparams.optimizer['weight_decay'])
+
+        if self.hparams.scheduler['name'] is None:
+            return optimizer
+        else:
+            if self.hparams.scheduler['name'] == 'step':
+                scheduler = torch.optim.lr_scheduler.StepLR(optimizer, self.hparams.scheduler['step_size'], self.hparams.scheduler['gamma'], verbose=False)
+            else:
+                raise NotImplementedError(f"lr scheduler {self.hparams.scheduler['name']} is unsupported")
+
+            return [optimizer], [scheduler]

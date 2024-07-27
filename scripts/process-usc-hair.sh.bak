@@ -1,0 +1,24 @@
+#!/bin/bash
+# resample all hairstyles to have ~10k strands
+python src/preprocess.py --process_fn resample --indir data/usc-hair/data --outdir data/usc-hair-resample --roots data/roots/rootPositions_10k.txt
+
+# augment dataset by horizontally flipping each hairstyle
+python src/preprocess.py --process_fn flip --indir data/usc-hair-resample/data --outdir data/usc-hair-resample/data
+
+# decompose hairstyles into guide strands and local strands
+python src/preprocess.py --process_fn decompose --indir data/usc-hair/data --outdir data/usc-hair/npz --n_clusters 100 --smooth true
+python src/preprocess.py --process_fn decompose --indir data/usc-hair-resample/data --outdir data/usc-hair-resample/npz --n_clusters 100 --smooth true
+
+# solve blend shapes for each hair component (FFT produces better bases to preserve the curvature)
+python src/preprocess.py --process_fn blend_shapes --indir data/usc-hair/npz --outdir data/blend-shapes/strands --bs_type strands --n_coeff 128 --svd_solver full --fft true
+
+# fit neural textures for each hair component (nearest interpolation produces better results than bilinear when sampled with different hair roots)
+# number of blend shapes for USC hair data: 64 for original and local strands, 32 for guide strands
+python src/preprocess.py --process_fn texture --indir data/usc-hair-resample/npz --outdir data/neural-textures --texture_type strands --interp_mode nearest
+python src/preprocess.py --process_fn texture --indir data/usc-hair-resample/npz --outdir data/neural-textures --texture_type pca --interp_mode nearest --bsdir data/blend-shapes/strands-fft/strands-blend-shapes.npz --n_coeff 64 --fft true
+python src/preprocess.py --process_fn texture --indir data/usc-hair-resample/npz --outdir data/neural-textures --texture_type guide --interp_mode nearest --bsdir data/blend-shapes/strands-fft/guide-strands-blend-shapes.npz --n_coeff 32 --fft true
+python src/preprocess.py --process_fn texture --indir data/usc-hair-resample/npz --outdir data/neural-textures --texture_type local --interp_mode nearest --bsdir data/blend-shapes/strands-fft/local-strands-blend-shapes.npz --n_coeff 64 --fft true
+
+# python src/preprocess.py --process_fn normalize --indir data/neural-textures/pca-strands --outdir data/neural-textures/pca-strands
+# python src/preprocess.py --process_fn normalize --indir data/neural-textures/guide-strands --outdir data/neural-textures/guide-strands
+# python src/preprocess.py --process_fn normalize --indir data/neural-textures/local-strands --outdir data/neural-textures/local-strands

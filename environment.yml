@@ -1,0 +1,27 @@
+name: perm
+channels:
+  - default
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python>=3.9.0,<3.10.0
+  - pip>=21.2.0
+  - numpy>=1.21.0
+  - setuptools>=58.0.0
+  - wheel>=0.37.0
+  - twine>=3.7.0
+  - click>=8.0
+  - pillow=8.3.1
+  - scipy>1.7.1
+  - pytorch=1.11.0
+  # - cudatoolkit=11.1
+  - cudatoolkit=11.3
+  - requests=2.26.0
+  - tqdm=4.62.2
+  - ninja=1.10.2
+  - matplotlib=3.4.2
+  - imageio=2.9.0
+  - embree=2.17.7 
+  - pyembree 
+  - openexr-python

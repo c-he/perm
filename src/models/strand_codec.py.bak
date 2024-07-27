@@ -1,0 +1,235 @@
+import os
+
+import pytorch_lightning as pl
+import torch
+import torch.nn.functional as F
+
+from hair import Strands
+from models.loss import StrandReconstructionLoss
+from models.module import StrandDecoder, StrandEncoder
+from utils.misc import load_as_parameter_dict, normalize
+
+
+class StrandCodec(pl.LightningModule):
+    def __init__(self, args):
+        super().__init__()
+        self.save_hyperparameters(args)
+
+        self.encoder = StrandEncoder(in_features=args.codec.in_features,
+                                     out_features=args.codec.latent_dim,
+                                     hidden_features=args.codec.hidden_features,
+                                     kernel_size=args.codec.kernel_size,
+                                     nonlinearity=args.codec.nonlinearity,
+                                     pooling=args.codec.pooling
+                                     )
+        self.decoder = StrandDecoder(seq_length=args.codec.seq_length,
+                                     in_features=args.codec.latent_dim,
+                                     out_features=args.codec.out_features,
+                                     hidden_features=args.codec.hidden_features[::-1],
+                                     kernel_size=args.codec.kernel_size,
+                                     nonlinearity=args.codec.nonlinearity
+                                     )
+
+        data_dir = os.path.split(args.dataset.hair_data)[0]
+        self.mean = load_as_parameter_dict(os.path.join(data_dir, 'mean.npz'))
+        self.std = load_as_parameter_dict(os.path.join(data_dir, 'std.npz'))
+
+        self.criterion = StrandReconstructionLoss(cos_angle=True, reduction='mean')
+
+        self.validation_step_outputs = dict()
+
+    def forward(self, batch, mapping):
+        """
+        Args:
+            batch (dict): Batch data sampled from the dataset.
+            mapping (dict): Dict of key to key mappings.
+
+        Returns: 
+            (Strands) Decoded strands.
+        """
+        latent = self.encode(batch, mapping)
+
+        return self.decode(latent)
+
+    def encode(self, batch, mapping):
+        """
+        Args:
+            batch (dict): Batch data sampled from the dataset.
+            mapping (dict): Dict of key to key mappings.
+
+        Returns:
+            latent codes in the shape (B, D).
+        """
+        position = batch.get('pos', None)  # (batch_size, num_samples - 1, 3)
+        rotation = batch.get('rot', None)  # (batch_size, num_samples - 1, 6)
+        length = batch.get('len', None)  # (batch_size, num_samples - 1)
+        residual = batch.get('res', None)  # (batch_size, num_samples - 1, 3)
+
+        if self.hparams.dataset['normalize']:
+            if position is not None:
+                position = normalize(position, self.mean[mapping['pos']], self.std[mapping['pos']])
+            if rotation is not None:
+                rotation = normalize(rotation, self.mean[mapping['rot']], self.std[mapping['rot']])
+            if length is not None:
+                length = normalize(length, self.mean[mapping['len']], self.std[mapping['len']])
+            if residual is not None:
+                residual = normalize(residual, self.mean[mapping['res']], self.std[mapping['res']])
+
+        if self.hparams.codec['strand_repr'] == 'residual':
+            x = residual  # (batch_size, num_samples - 1, 3)
+        else:
+            if self.hparams.codec['input_repr'] == 'full':
+                x = torch.cat([position, rotation, length[..., None]], dim=-1)  # (batch_size, num_samples - 1, 10)
+            else:
+                x = position  # (batch_size, num_samples - 1, 3)
+
+        z = self.encoder(x)  # (batch_size, latent_dim)
+
+        return z
+
+    def decode(self, latent):
+        """
+        Args:
+            latent (torch.Tensor): latent codes in the shape (B, D).
+
+        Returns:
+            dict of decoded strands.
+        """
+        output = self.decoder(torch.tanh(latent))
+
+        global_rot = self.hparams.codec.get('global_rot', False)
+        return Strands.from_tensor(output, self.hparams.codec['strand_repr'], global_rot)
+
+    def training_step(self, batch, batch_idx):
+        if 'position_local' in batch:  # encode local strands
+            mapping = {
+                'pos': 'position_local',
+                'rot': 'rotation_local',
+                'len': 'length_local'
+            }
+        elif 'position_guide' in batch:  # encode guide strands
+            mapping = {
+                'pos': 'position_guide',
+                'rot': 'rotation_guide',
+                'len': 'length_guide'
+            }
+        elif 'residual_local' in batch:  # encode high-frequency residuals
+            mapping = {
+                'res': 'residual_local'
+            }
+        else:
+            if self.hparams.codec['input_repr'] == 'full':
+                mapping = {
+                    'pos': 'position',
+                    'rot': 'rotation',
+                    'len': 'length'
+                }
+            else:
+                mapping = {
+                    'pos': 'position'
+                }
+
+        data = dict()
+        for k, v in mapping.items():
+            data[k] = batch[v]
+
+        recon_strands = self(data, mapping)
+
+        position = data.get('pos', None)
+        if position is not None:
+            position = F.pad(position, (0, 0, 1, 0), mode='constant', value=0)
+        rotation = data.get('rot', None)
+        length = data.get('len', None)
+        residual = data.get('res', None)
+        gt_strands = Strands(position=position, rotation=rotation, length=length, residual=residual)
+        terms = self.criterion(recon_strands, gt_strands)
+
+        loss = 0
+        for k, v in terms.items():
+            loss += self.hparams.optimizer[f'lambda_{k}'] * v
+            self.log(f'{k}', v, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('loss', loss, on_step=True, on_epoch=True, prog_bar=True, sync_dist=True)
+
+        return loss
+
+    def validation_step(self, batch, batch_idx):
+        if 'position_local' in batch:  # encode local strands
+            mapping = {
+                'pos': 'position_local',
+                'rot': 'rotation_local',
+                'len': 'length_local'
+            }
+        elif 'position_guide' in batch:  # encode guide strands
+            mapping = {
+                'pos': 'position_guide',
+                'rot': 'rotation_guide',
+                'len': 'length_guide'
+            }
+        elif 'residual_local' in batch:  # encode high-frequency residuals
+            mapping = {
+                'res': 'residual_local'
+            }
+        else:
+            if self.hparams.codec['input_repr'] == 'full':
+                mapping = {
+                    'pos': 'position',
+                    'rot': 'rotation',
+                    'len': 'length'
+                }
+            else:
+                mapping = {
+                    'pos': 'position'
+                }
+
+        data = dict()
+        for k, v in mapping.items():
+            data[k] = batch[v]
+
+        recon_strands = self(data, mapping)
+
+        position = data.get('pos', None)
+        if position is not None:
+            position = F.pad(position, (0, 0, 1, 0), mode='constant', value=0)
+        rotation = data.get('rot', None)
+        length = data.get('len', None)
+        residual = data.get('res', None)
+        gt_strands = Strands(position=position, rotation=rotation, length=length, residual=residual)
+        terms = self.criterion(recon_strands, gt_strands)
+
+        loss = 0
+        for k, v in terms.items():
+            loss += self.hparams.optimizer[f'lambda_{k}'] * v
+        if recon_strands.residual is not None and gt_strands.residual is not None:
+            pos_diff = torch.norm(recon_strands.residual - gt_strands.residual, dim=-1)
+        else:
+            pos_diff = torch.norm(recon_strands.position - gt_strands.position, dim=-1)
+
+        if 'val_loss' not in self.validation_step_outputs:
+            self.validation_step_outputs['val_loss'] = []
+        if 'pos_diff' not in self.validation_step_outputs:
+            self.validation_step_outputs['pos_diff'] = []
+
+        self.validation_step_outputs['val_loss'].append(loss.unsqueeze(0))
+        self.validation_step_outputs['pos_diff'].append(pos_diff)
+
+    def on_validation_epoch_end(self):
+        val_loss = torch.cat(self.validation_step_outputs['val_loss']).mean()
+        pos_diff = torch.cat(self.validation_step_outputs['pos_diff']).mean()
+        self.log('val_loss', val_loss, on_epoch=True, prog_bar=True, sync_dist=True)
+        self.log('pos_diff', pos_diff, on_epoch=True, prog_bar=True, sync_dist=True)
+
+        self.validation_step_outputs['val_loss'].clear()
+        self.validation_step_outputs['pos_diff'].clear()
+
+    def configure_optimizers(self):
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.optimizer['lr'], weight_decay=self.hparams.optimizer['weight_decay'])
+
+        if self.hparams.scheduler['name'] is None:
+            return optimizer
+        else:
+            if self.hparams.scheduler['name'] == 'step':
+                scheduler = torch.optim.lr_scheduler.StepLR(optimizer, self.hparams.scheduler['step_size'], self.hparams.scheduler['gamma'], verbose=False)
+            else:
+                raise NotImplementedError(f"lr scheduler {self.hparams.scheduler['name']} is unsupported")
+
+            return [optimizer], [scheduler]

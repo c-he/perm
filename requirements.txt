@@ -1,0 +1,17 @@
+autopep8
+pylint
+trimesh[all]
+scikit-learn
+attrdict
+natsort
+pandas
+pyexr
+pyyaml
+imageio-ffmpeg==0.4.8
+pyspng
+psutil
+einops
+tensorboard
+-f https://data.pyg.org/whl/torch-1.11.0+cu113.html
+torch-cluster
+git+https://github.com/NVlabs/nvdiffrast.git@v0.3.0 # Nvdiffrast
