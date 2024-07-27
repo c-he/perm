@@ -2,39 +2,39 @@
 
   <h2 align="center">Perm: A Parametric Representation for Multi-Style 3D Hair Modeling</h2>
   <p align="center">
-    <a href="https://xavierchen34.github.io/"><strong>Chengan He</strong></a>
+    <a href="https://xavierchen34.github.io/"><strong>Chengan He<sup>1</sup></strong></a>
     ·
-    <a href="https://scholar.google.com/citations?user=JYVCn3AAAAAJ&hl=en"><strong>Xin Sun</strong></a>
+    <a href="https://scholar.google.com/citations?user=JYVCn3AAAAAJ&hl=en"><strong>Xin Sun<sup>2</sup></strong></a>
     ·
-    <a href="https://scholar.google.com/citations?user=8zksQb4AAAAJ&hl=zh-CN"><strong>Zhixin Shu</strong></a>
+    <a href="https://scholar.google.com/citations?user=8zksQb4AAAAJ&hl=zh-CN"><strong>Zhixin Shu<sup>2</sup></strong></a>
     ·
-    <a href="https://shenyujun.github.io/"><strong>Fujun Luan</strong></a>
+    <a href="https://shenyujun.github.io/"><strong>Fujun Luan<sup>2</sup></strong></a>
     ·
-    <a href="https://scholar.google.com/citations?user=7LhjCn0AAAAJ&hl=en"><strong>Soren Pirk</strong></a>
+    <a href="https://scholar.google.com/citations?user=7LhjCn0AAAAJ&hl=en"><strong>Soren Pirk<sup>3</sup></strong></a>
     ·
-    <a href="https://hszhao.github.io/"><strong>Jorge Alejandro Amador Herrera</strong></a>
+    <a href="https://hszhao.github.io/"><strong>Jorge Alejandro Amador Herrera<sup>4</sup></strong></a>
     ·
-    <a href="https://hszhao.github.io/"><strong>Dominik L. Michels</strong></a>
+    <a href="https://hszhao.github.io/"><strong>Dominik L. Michels<sup>4</sup></strong></a>
     ·
-    <a href="https://hszhao.github.io/"><strong>Tuanfeng Y. Wang</strong></a>
+    <a href="https://hszhao.github.io/"><strong>Tuanfeng Y. Wang<sup>2</sup></strong></a>
     ·
-    <a href="https://hszhao.github.io/"><strong>Meng Zhang</strong></a>
+    <a href="https://hszhao.github.io/"><strong>Meng Zhang<sup>5</sup></strong></a>
     ·
-    <a href="https://hszhao.github.io/"><strong>Holly Rushmeier</strong></a>
+    <a href="https://hszhao.github.io/"><strong>Holly Rushmeier<sup>1</sup></strong></a>
     ·
-    <a href="https://hszhao.github.io/"><strong>Yi Zhou</strong></a>
+    <a href="https://hszhao.github.io/"><strong>Yi Zhou<sup>2</sup></strong></a>
     <br>
     <br>
         <a href="https://arxiv.org/abs/2307.09481"><img src='https://img.shields.io/badge/arXiv-Perm-red' alt='Paper PDF'></a>
         <a href='https://ali-vilab.github.io/AnyDoor-Page/'><img src='https://img.shields.io/badge/Project_Page-Perm-green' alt='Project Page'></a>
     <br>
-    <b>The University of Hong Kong &nbsp; | &nbsp;  Alibaba Group  | &nbsp;  Ant Group </b>
+    <b><sup>1</sup>Yale University &nbsp; | &nbsp;  <sup>2</sup>Adobe Research  | &nbsp;  <sup>3</sup>CAU  | &nbsp;  <sup>4</sup>KAUST  | &nbsp;  <sup>5</sup>Nanjing University of Science and Technology </b>
   </p>
   
   <table align="center">
     <tr>
     <td>
-      <img src="assets/Figures/Teaser.png">
+      <img src="perm.png">
     </td>
     </tr>
   </table>

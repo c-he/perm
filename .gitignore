@@ -170,7 +170,6 @@ test_*/
 ablation/
 *.ply
 *.abc
-*.png
 !data/roots/scalp_mask.png
 training-runs/
 proj/
