@@ -180,3 +180,5 @@ src_*/
 evaluation/
 rendering/
 fitting/
+
+*.data

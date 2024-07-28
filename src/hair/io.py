@@ -1,31 +1,62 @@
-try:
-    import stylist
-except:
-    raise ModuleNotFoundError("Module Stylist is required for hair data I/O but not found in the environment. "
-                              "To install it, please check: https://git.corp.adobe.com/research-hair-dataset/stylist or https://git.corp.adobe.com/chhe/stylist")
 import os
-from typing import Optional
+import struct
 
 import numpy as np
 
 
 def load_hair(path: str) -> np.ndarray:
     ext = os.path.splitext(path)[1]
-    assert ext in ['.data', '.abc'], "only support loading hair data in .data and .abc formats"
+    assert ext == '.data', "only support loading hair data in .data format"
 
-    h = stylist.hair()
-    h.load(path)
+    with open(path, 'rb') as f:
+        data = f.read()
+    num_strands = struct.unpack('i', data[:4])[0]
+    strands = []
+    idx = 4
+    for _ in range(num_strands):
+        num_points = struct.unpack('i', data[idx:idx + 4])[0]
+        points = struct.unpack('f' * num_points * 3, data[idx + 4:idx + 4 + 4 * num_points * 3])
+        strands.append(list(points))
+        idx = idx + 4 + 4 * num_points * 3
+    strands = np.array(strands).reshape((num_strands, -1, 3))
 
-    return np.array(h.strands)
+    return strands
 
 
-def save_hair(path: str, data: np.ndarray, color: Optional[np.ndarray] = None):
+def save_hair(path: str, data: np.ndarray) -> None:
     ext = os.path.splitext(path)[1]
-    assert ext in ['.data', '.abc', '.obj', '.ply'], "only support saving hair data in .data, .abc, .obj and .ply formats"
+    assert ext in ['.data', '.obj'], "only support saving hair data in .data and .obj format"
 
-    h = stylist.hair()
-    h.strands = data
-    if ext == '.ply':
-        h.save_ply_binary_with_colors(path, color) if color is not None else h.save_ply_binary_with_random_strand_colors(path)
+    if ext == '.data':
+        _save_hair_data(path, data)
     else:
-        h.save(path)
+        _save_hair_obj(path, data)
+
+
+def _save_hair_data(path: str, data: np.ndarray) -> None:
+    num_strands, num_points = data.shape[:2]
+    with open(path, 'wb') as f:
+        f.write(struct.pack('i', num_strands))
+        for i in range(num_strands):
+            f.write(struct.pack('i', num_points))
+            f.write(struct.pack('f' * num_points * 3, *data[i].flatten().tolist()))
+
+
+def _save_hair_obj(path: str, data: np.ndarray) -> None:
+    verts = np.reshape(data, [-1, 3])
+    edges = np.reshape(np.arange(data.shape[0] * data.shape[1]), [data.shape[0], data.shape[1]])
+    edges = edges + 1
+    lines = [None] * (verts.shape[0] + edges.shape[0] * (edges.shape[1] - 1))
+
+    li = 0
+    for v in verts:
+        lines[li] = 'v ' + ' '.join(map(str, v)) + '\n'
+        li += 1
+
+    for e in edges:
+        for i in range(len(e) - 1):
+            lines[li] = 'l ' + ' '.join(map(str, e[i:i + 2])) + '\n'
+            li += 1
+
+    with open(path, 'w') as f:
+        f.writelines(lines)

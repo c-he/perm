@@ -50,9 +50,8 @@ def eval_blend_shapes(indir, outdir, bsdir, n_coeff, save_strands):
         if save_strands:
             position = position + roots
             gt_position = gt_position + roots
-            # save_hair(os.path.join(outdir, f'{filename}.data'), c2c(position))
-            # save_hair(os.path.join(outdir, f'{filename}_gt.data'), c2c(gt_position))
-            visualize_hair_recon_error(os.path.join(outdir, f'{filename}.ply'), c2c(position), c2c(gt_position))
+            save_hair(os.path.join(outdir, f'{filename}.data'), c2c(position))
+            save_hair(os.path.join(outdir, f'{filename}_gt.data'), c2c(gt_position))
 
     df = pd.DataFrame.from_dict(metrics)
     bs_fname = os.path.splitext(os.path.basename(bsdir))[0]

@@ -7,15 +7,15 @@ import PIL
 import torch
 from matplotlib.colors import Normalize
 
-plt.rcParams.update({
-    "text.usetex": True,  # require LaTeX and type1cm on Ubuntu
-    "font.family": "sans-serif",
-    'text.latex.preamble': [
-        r"""
-        \usepackage{libertine}
-        \usepackage[libertine]{newtxmath}
-        """],
-})
+# plt.rcParams.update({
+#     "text.usetex": True,  # require LaTeX and type1cm on Ubuntu
+#     "font.family": "sans-serif",
+#     'text.latex.preamble': [
+#         r"""
+#         \usepackage{libertine}
+#         \usepackage[libertine]{newtxmath}
+#         """],
+# })
 
 
 def config_plot():
@@ -99,15 +99,3 @@ def plot_texture_error(fp: str, error_image: torch.Tensor, colorbar=False) -> No
     else:
         image = np.rint(image * 255).clip(0, 255).astype(np.uint8)
         PIL.Image.fromarray(image, 'RGB').save(fp)
-
-
-def visualize_hair_recon_error(fp: str, position: np.ndarray, gt_position: np.ndarray) -> None:
-    from hair import save_hair
-
-    recon_error = np.linalg.norm(position - gt_position, axis=-1)
-    cmap = cm.jet
-    # norm = Normalize(vmin=recon_error.min(), vmax=recon_error.max())
-    norm = Normalize(vmin=0, vmax=2)
-    error_viz = cmap(norm(recon_error))[..., :3]
-    color = np.clip(np.rint(error_viz * 255), 0, 255).astype(int)
-    save_hair(fp, position, color=color)
