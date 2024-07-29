@@ -10,7 +10,7 @@
     ·
     <a href="https://luanfujun.com/"><strong>Fujun Luan<sup>2</sup></strong></a>
     ·
-    <a href="https://storage.googleapis.com/pirk.io/index.html"><strong>Soren Pirk<sup>3</sup></strong></a>
+    <a href="https://storage.googleapis.com/pirk.io/index.html"><strong>Sören Pirk<sup>3</sup></strong></a>
     ·
     <a href="https://cemse.kaust.edu.sa/people/person/jorge-alejandro-amador-herrera"><strong>Jorge Alejandro Amador Herrera<sup>4</sup></strong></a>
     ·
