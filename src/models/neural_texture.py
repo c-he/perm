@@ -2,10 +2,9 @@ import torch
 import torch.nn.functional as F
 
 from hair import Strands
+from models.encoder import EncodingNetwork
 from models.networks_stylegan2 import FullyConnectedLayer
 from models.networks_stylegan2 import Generator as StyleGAN2Backbone
-from models.encoder import EncodingNetwork
-from models.superresolution import SuperresolutionNetwork
 from models.networks_stylegan2 import SynthesisNetwork
 from models.strand_codec import StrandCodec
 from models.unet import UNetModel
@@ -197,74 +196,6 @@ class NeuralTextureSuperRes(torch.nn.Module):
         if coordinates.shape[0] != batch_size:
             coordinates = coordinates.expand(batch_size, -1, -1)
         coeff = sample(coordinates, image, mode=mode)
-        position = self.strand_codec.decode(coeff.reshape(batch_size * num_coords, -1))
-        position = position.reshape(batch_size, num_coords, -1, 3)
-        position = F.pad(position, (0, 0, 1, 0), mode='constant', value=0)
-
-        return Strands(position=position)
-
-
-import numpy as np
-
-
-@persistence.persistent_class
-class NeuralTexture(torch.nn.Module):
-    def __init__(
-        self,
-        z_dim,                           # Input latent dimensionality.
-        w_dim,                           # Intermediate latent (W) dimensionality.
-        img_resolution,                  # Output resolution.
-        img_channels,                    # Number of output color channels.
-        img_scale,                       # Whether to scale the output texture.
-        mapping_kwargs={},               # Arguments for MappingNetwork.
-        strand_kwargs={},                # Arguments for StrandCodec.
-        **synthesis_kwargs,              # Arguments for SynthesisNetwork.
-    ):
-        super().__init__()
-        self.z_dim = z_dim
-        self.w_dim = w_dim
-        self.img_resolution = img_resolution
-        self.img_channels = img_channels
-        self.img_scale = img_scale
-        self.backbone = StyleGAN2Backbone(z_dim=z_dim, c_dim=0, w_dim=w_dim, img_resolution=img_resolution, img_channels=img_channels, mapping_kwargs=mapping_kwargs, **synthesis_kwargs)
-        self.decoder = PCADecoder(in_features=img_channels, out_features=img_channels, decoder_lr_mul=1)
-        self.strand_codec = StrandCodec(**strand_kwargs)
-        coeff_stats = np.load('data/neural-textures/coeff-stats.npz')
-        coeff_mean = torch.tensor(coeff_stats['mean'][None, 10:, None, None], dtype=torch.float32)
-        self.register_buffer('coeff_mean', coeff_mean)
-        coeff_std = torch.tensor(coeff_stats['std'][None, 10:, None, None], dtype=torch.float32)
-        self.register_buffer('coeff_std', coeff_std)
-
-    def mapping(self, z, truncation_psi=1, truncation_cutoff=None, update_emas=False):
-        return self.backbone.mapping(z, c=None, truncation_psi=truncation_psi, truncation_cutoff=truncation_cutoff, update_emas=update_emas)
-
-    def synthesis(self, ws, update_emas=False, **synthesis_kwargs):
-        feature_image = self.backbone.synthesis(ws, update_emas=update_emas, **synthesis_kwargs)
-        N = feature_image.shape[0]
-        feature_samples = feature_image.permute(0, 2, 3, 1).reshape(N, -1, self.img_channels).contiguous()
-        out = self.decoder(feature_samples)
-        H = W = self.img_resolution
-        coeff_image = out['coeff'].permute(0, 2, 1).reshape(N, -1, H, W).contiguous()
-        mask_image = out['mask'].permute(0, 2, 1).reshape(N, 1, H, W).contiguous()
-        # if self.img_scale:
-        #     coeff_image = coeff_image * self.coeff_std + self.coeff_mean
-        return {'image': coeff_image, 'image_mask': mask_image}
-
-    def forward(self, z, truncation_psi=1, truncation_cutoff=None, update_emas=False, **synthesis_kwargs):
-        # Synthesis a batch of neural textures.
-        ws = self.mapping(z, truncation_psi=truncation_psi, truncation_cutoff=truncation_cutoff, update_emas=update_emas)
-        return self.synthesis(ws, update_emas=update_emas, **synthesis_kwargs)
-
-    def sample(self, image, coordinates=None, mode='nearest'):
-        batch_size = image.shape[0]
-        if coordinates is None:
-            num_coords = image.shape[2] * image.shape[3]
-            coeff = image.permute(0, 2, 3, 1)
-        else:
-            num_coords = coordinates.shape[1]
-            if coordinates.shape[0] != batch_size:
-                coordinates = coordinates.expand(batch_size, -1, -1)
-            coeff = sample(coordinates, image, mode=mode)
         position = self.strand_codec.decode(coeff.reshape(batch_size * num_coords, -1))
         position = position.reshape(batch_size, num_coords, -1, 3)
         position = F.pad(position, (0, 0, 1, 0), mode='constant', value=0)

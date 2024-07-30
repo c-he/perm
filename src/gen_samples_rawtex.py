@@ -141,7 +141,7 @@ def generate_images(
         guide_strands = G.sample(image)
         guide_strands.position = guide_strands.position + guide_roots.unsqueeze(2)
         write_texture(os.path.join(outdir, f'seed{seed:04d}.png'), image[0].permute(1, 2, 0), alpha=image_mask[0].permute(1, 2, 0))
-        save_hair(os.path.join(outdir, f'seed{seed:04d}.ply'), c2c(guide_strands.position[0]))
+        save_hair(os.path.join(outdir, f'seed{seed:04d}.obj'), c2c(guide_strands.position[0]))
         np.savez(os.path.join(outdir, f'seed{seed:04d}.npz'), texture=c2c(image[0]), mask=c2c(image_mask[0]), roots=c2c(uv_guide))
 
 

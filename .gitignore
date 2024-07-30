@@ -182,3 +182,5 @@ rendering/
 fitting/
 
 *.data
+
+src/test*.py

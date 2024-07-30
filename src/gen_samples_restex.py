@@ -124,7 +124,7 @@ def generate_images(
         image = torch.cat([low_rank_coeff.unsqueeze(0), high_rank_coeff], dim=1)
         strands = G.sample(image, coords.unsqueeze(0), mode='nearest')[0]
         strands.position = strands.position + hair_roots.spherical_to_cartesian(roots).unsqueeze(1)
-        save_hair(os.path.join(outdir, f'{fname}_seed{seed:04d}.ply'), c2c(strands.position))
+        save_hair(os.path.join(outdir, f'{fname}_seed{seed:04d}.obj'), c2c(strands.position))
 
 
 # ----------------------------------------------------------------------------

@@ -25,7 +25,7 @@
     <a href="https://zhouyisjtu.github.io/"><strong>Yi Zhou<sup>2</sup></strong></a>
     <br>
     <br>
-        <a href="https://arxiv.org/abs/2307.09481"><img src='https://img.shields.io/badge/arXiv-Perm-red' alt='Paper PDF'></a>
+        <a href="https://arxiv.org/abs/2407.19451"><img src='https://img.shields.io/badge/arXiv-Perm-red' alt='Paper PDF'></a>
         <a href='https://cs.yale.edu/homes/che/projects/perm/'><img src='https://img.shields.io/badge/Project_Page-Perm-green' alt='Project Page'></a>
     <br>
     <b><sup>1</sup> Yale University &nbsp; | &nbsp; <sup>2</sup> Adobe Research &nbsp; | &nbsp; <sup>3</sup> CAU &nbsp; | &nbsp; <sup>4</sup> KAUST &nbsp; | &nbsp; <sup>5</sup> Nanjing University of Science and Technology </b>
@@ -98,11 +98,11 @@ This script will train a StyleGAN2 as our parametric model for the fitted neural
 
 If you found this code or paper useful, please consider citing:
 ```bibtex
-@inproceedings{he2022nemf,
-    author = {He, Chengan and Saito, Jun and Zachary, James and Rushmeier, Holly and Zhou, Yi},
-    title = {NeMF: Neural Motion Fields for Kinematic Animation},
-    booktitle = {NeurIPS},
-    year = {2024}
+@article{he2024perm,
+    title={Perm: A Parametric Representation for Multi-Style 3D Hair Modeling},
+    author={Chengan He and Xin Sun and Zhixin Shu and Fujun Luan and S\"{o}ren Pirk and Jorge Alejandro Amador Herrera and Dominik L. Michels and Tuanfeng Y. Wang and Meng Zhang and Holly Rushmeier and Yi Zhou},
+    journal={arXiv preprint arXiv::2407.19451},
+    year={2024}
 }
 ```
 

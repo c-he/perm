@@ -23,7 +23,6 @@ import torch
 
 import dnnlib
 from training import training_loop
-from metrics import metric_main
 from torch_utils import training_stats
 from torch_utils import custom_ops
 
@@ -244,8 +243,6 @@ def main(**kwargs):
         raise click.ClickException('--batch must be a multiple of --gpus')
     if c.batch_size % (c.num_gpus * c.batch_gpu) != 0:
         raise click.ClickException('--batch must be a multiple of --gpus times --batch-gpu')
-    if any(not metric_main.is_valid_metric(metric) for metric in c.metrics):
-        raise click.ClickException('\n'.join(['--metrics can only contain the following values:'] + metric_main.list_valid_metrics()))
 
     # Base configuration.
     c.ema_kimg = c.batch_size * 10 / 32

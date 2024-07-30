@@ -25,7 +25,7 @@ import torch.nn.functional as F
 from hair import save_hair
 from hair.hair_models import Perm
 from hair.loss import StrandGeometricLoss
-from metrics.hair_reconstruction import curvature
+from utils.metric import curvature
 from utils.misc import copy2cpu as c2c
 from utils.misc import filename, load_tensor_dict
 

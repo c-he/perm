@@ -2,6 +2,7 @@ from typing import Dict
 
 import numpy as np
 import pandas as pd
+import torch
 from pandas import ExcelWriter
 from sklearn import metrics
 
@@ -90,26 +91,15 @@ def clustering_metrics(X, labels):
             }
 
 
-def curvature(position: np.ndarray) -> np.ndarray:
+def curvature(position: torch.Tensor) -> torch.Tensor:
     # we first compute the circumradius r for every 3 adjacent points on the strand, and curvature is defined as 1/r.
     # https://en.wikipedia.org/wiki/Circumscribed_circle
     a = position[..., :-2, :] - position[..., 2:, :]  # (..., num_samples - 2, 3)
     b = position[..., 1:-1, :] - position[..., 2:, :]  # (..., num_samples - 2, 3)
     c = a - b
-    curvature = 2.0 * np.linalg.norm(np.cross(a, b), axis=-1) / (np.linalg.norm(a, axis=-1) * np.linalg.norm(b, axis=-1) * np.linalg.norm(c, axis=-1) + EPSILON)  # (num_strands, num_samples - 2)
+    curvature = 2.0 * torch.norm(torch.cross(a, b, dim=-1), dim=-1) / (torch.norm(a, dim=-1) * torch.norm(b, dim=-1) * torch.norm(c, dim=-1) + EPSILON)  # (batch_size, num_strands, num_samples - 2)
 
     return curvature
-
-
-def hair_reconstruction_metrics(position: np.ndarray, position_gt: np.ndarray) -> Dict:
-    pos_diff = np.linalg.norm(position - position_gt, axis=-1)
-    pos_diff = pos_diff.mean()
-    cur_diff = np.abs(curvature(position) - curvature(position_gt))
-    cur_diff = cur_diff.mean()
-
-    return {'pos_diff': pos_diff,
-            'cur_diff': cur_diff
-            }
 
 
 def export_csv(csv_fname: str, metrics: Dict) -> None:

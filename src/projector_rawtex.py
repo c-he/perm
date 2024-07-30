@@ -26,9 +26,9 @@ import dnnlib
 import legacy
 from hair import HairRoots, save_hair
 from hair.loss import StrandGeometricLoss
-from metrics.hair_reconstruction import curvature
 from models.neural_texture import RawNeuralTexture
 from torch_utils import misc
+from utils.metric import curvature
 from utils.misc import copy2cpu as c2c
 from utils.misc import filename, load_tensor_dict
 

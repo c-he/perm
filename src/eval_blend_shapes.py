@@ -8,10 +8,9 @@ import torch.nn.functional as F
 from tqdm import tqdm
 
 from hair import load_hair, save_hair
-from metrics.hair_reconstruction import curvature
 from models import StrandCodec
+from utils.metric import curvature
 from utils.misc import copy2cpu as c2c
-from utils.visualize import visualize_hair_recon_error
 
 # ----------------------------------------------------------------------------
 

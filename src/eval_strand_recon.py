@@ -7,7 +7,7 @@ import torch
 from tqdm import tqdm
 
 from hair import load_hair
-from metrics.hair_reconstruction import curvature
+from utils.metric import curvature
 from utils.misc import copy2cpu as c2c
 
 # ----------------------------------------------------------------------------
