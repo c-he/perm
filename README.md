@@ -42,7 +42,7 @@
 ## TODO
 
 - [x] Release cleaned codebase.
-- [ ] Release pre-trained checkpoints.
+- [x] Release pre-trained checkpoints.
 - [ ] Release augmented USC-HairSalon that contains ~20k hairstyles.
 - [ ] Release fitted Perm parameters for the original 343 hairstyles in USC-HairSalon.
 - [ ] Release checkpoints trained on more curly data (v2).
@@ -64,7 +64,7 @@ pip install -r requirements.txt --no-cache-dir
 
 ### Pre-trained models
 
-Pre-trained networks can be downloaded from **XXX**, which are stored as `*.pkl` files following the format of EG3D.
+Pre-trained networks can be downloaded and extracted from this [OneDrive link](https://yaleedu-my.sharepoint.com/:u:/g/personal/chengan_he_yale_edu/ESQ2YM2wd39Fg2PNrUQRV_cBg61LQWPFp7xhuq3knOkNtw?e=33h7pF), which are stored as `*.pkl` files following the format of EG3D.
 
 You can use pre-trained networks in your own Python code as follows:
 ```python
@@ -115,7 +115,7 @@ Here `hair1_data` and `hair2_data` correspond to the two processed hair geomerty
 
 ### USC-HairSalon
 
-Since the [original link](http://www-scf.usc.edu/~liwenhu/SHM/database.html) of USC-HairSalon has been deprecated for a while, you can obtain a copy of it from **XXX**. **These data are registered to `data/head.obj` and preprocessed to make sure each strand has 100 sample points**. We then augment these data using the style mixing algorithm described in [HairNet](https://github.com/papagina/HairNet_DataSetGeneration) to enlarge the dataset size to ~10k hairstyles. The augmented dataset can be downloaded from **XXX**. Please download these two datasets to `data/usc-hair` and `data/usc-hair-mix`, or create symbolic links under the `data` directory.
+Since the [original link](http://www-scf.usc.edu/~liwenhu/SHM/database.html) of USC-HairSalon has been deprecated for a while, you can obtain a copy of it from **[TODO]**. **These data are registered to `data/head.obj` and preprocessed to make sure each strand has 100 sample points**. We then augment these data using the style mixing algorithm described in [HairNet](https://github.com/papagina/HairNet_DataSetGeneration) to enlarge the dataset size to ~10k hairstyles. The augmented dataset can be downloaded from **[TODO]**. Please download these two datasets to `data/usc-hair` and `data/usc-hair-mix`, or create symbolic links under the `data` directory.
 
 ### Data processing
 
@@ -134,7 +134,7 @@ The PCA fitting process has a certain demand on the memory size. In our experime
 - `mask`: baldness map of the hairstyle, 1HW.
 - `roots`: 2D roots of strands in the uv space.
 
-Al processed data can be downloaded from **XXX**.
+Al processed data can be downloaded from **[TODO]**.
 
 ## Training
 
@@ -150,7 +150,7 @@ bash scripts/train-superres.sh
 
 **VAE:** To train a VAE backbone for our residual textures, run:
 ```bash
-bash scripts/train-texres.sh
+bash scripts/train-restex.sh
 ```
 
 ## Evaluation
@@ -161,13 +161,24 @@ We report the mean position error (pos. err.) and mean curvature error (cur. err
 
 Most of the figures in our paper are rendered using [Hair Tool](https://joseconseco.github.io/HairTool_3_Documentation/) in Blender. We highly recommend checking out this excellent addon!
 
+Note that some generated hairstyles may contain extremely short strands, which are caused by the expressive limitations of PCA (those zero-length strands after PCA projection and decoding). To filter out these strands and produce a clean rendering, run:
+```bash
+python src/preprocess.py --process_fn=filter --indir={input_data_folder} --outdir={output_data_folder} --length=2
+```
+Here `input_data_folder` are the folder of hairstyles stored in `*.data` format.
+
+These filtered results can be converted to `*.obj` files for Blender rendering using:
+```bash
+python src/preprocess.py --process_fn=convert --indir={input_data_folder} --outdir={output_obj_folder}
+```
+
 ## Acknowledgements
 
 - Our head mesh is made by [Pinscreen](https://www.pinscreen.com/).
 - Our code structure is based on [EG3D](https://github.com/NVlabs/eg3d).
 - Our naming convention and model formulation are heavily influenced by [SMPL](https://smpl.is.tue.mpg.de/).
 
-**Huge thanks to the support of our vendors and these great open-source projects!**
+**Huge thanks to our vendors and these outstanding open-source projects for their support!**
 
 ## Citation
 

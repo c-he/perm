@@ -68,7 +68,8 @@ def gen_from_parameters(
     print(f'theta: {theta.shape}')
     print(f'beta: {beta.shape}')
 
-    out = hair_model(roots=roots, theta=theta.unsqueeze(0), beta=beta.unsqueeze(0))
+    out = hair_model(roots=roots.unsqueeze(0), theta=theta.unsqueeze(0), beta=beta.unsqueeze(0))
+    save_hair(os.path.join(outdir, f'{fname}.data'), c2c(out['strands'][0].position))
     save_hair(os.path.join(outdir, f'{fname}_guide.data'), c2c(out['guide_strands'][0].position))
 
 

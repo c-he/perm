@@ -446,24 +446,14 @@ def strand_filtering(args):
         save_hair(os.path.join(args.outdir, f'{fname}.data'), filtered_strands)
 
 
-def collision_removal(args):
+def convert(args):
     hair_files = sorted(glob.glob(os.path.join(args.indir, '*.data')))
     os.makedirs(args.outdir, exist_ok=True)
 
-    head_mesh = './data/head.obj'
-    samples_per_strand = 100
-    for f in hair_files:
+    for f in tqdm(hair_files):
         fname = filename(f)
-        subprocess.run(['/disk3/proj_hair/stylist/build/RelWithDebInfo/bin/ftlhp-app',
-                        '-i', f,
-                        '-c', head_mesh,
-                        '-o', os.path.join(args.outdir, f'{fname}_ftl.data')
-                        ])
-        subprocess.run(['/disk3/proj_hair/stylist/build/RelWithDebInfo/bin/strand-resampling-app',
-                        '-i', os.path.join(args.outdir, f'{fname}_ftl.data'),
-                        '-s', str(samples_per_strand),
-                        '-o', os.path.join(args.outdir, f'{fname}_ftl.data')
-                        ])
+        strands = load_hair(f)
+        save_hair(os.path.join(args.outdir, f'{fname}.obj'), strands)
 
 # ----------------------------------------------------------------------------
 
@@ -499,7 +489,7 @@ def parse_comma_separated_list(s):
 
 @click.command()
 # Required.
-@click.option('--process_fn', '-p', help='Data processing function.', metavar='STR', type=click.Choice(['resample', 'scalp', 'flip', 'blend_shapes', 'texture', 'guide_strands', 'canonical', 'weight_image', 'normalize', 'cluster', 'filter', 'collision']), required=True)
+@click.option('--process_fn', '-p', help='Data processing function.', metavar='STR', type=click.Choice(['resample', 'scalp', 'flip', 'blend_shapes', 'texture', 'guide_strands', 'canonical', 'weight_image', 'normalize', 'cluster', 'filter', 'convert']), required=True)
 @click.option('--indir', '-i', help='Where to load the data.', metavar='DIR', required=True)
 @click.option('--range', type=parse_range, help='Range of input data to load (e.g., \'0,1,4-6\')', required=False)
 @click.option('--outdir', '-o', help='Where to save the results.', metavar='DIR', required=True)
@@ -550,12 +540,12 @@ def main(**kwargs):
         hair_clustering(args)
     elif args.process_fn == 'filter':
         strand_filtering(args)
+    elif args.process_fn == 'convert':
+        convert(args)
     elif args.process_fn == 'resample':
         hair_resampling(args, hair_roots, device)
     elif args.process_fn == 'scalp':
         scalp_mask(args, hair_roots, device)
-    elif args.process_fn == 'collision':
-        collision_removal(args)
 
 # ----------------------------------------------------------------------------
 

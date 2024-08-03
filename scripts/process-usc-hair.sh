@@ -16,5 +16,5 @@ python src/preprocess.py --process_fn=texture --indir=data/usc-hair-mix --outdir
 # compress fitted neural textures to obtain textures for guide strands (we use 10 PCA coefficients to smooth guide strands)
 python src/preprocess.py --process_fn=guide_strands --indir=data/neural-textures/high-res --outdir=data/neural-textures/low-res --size=32 --interp_mode=nearest --bsdir=data/blend-shapes/fft-strands-blend-shapes.npz --n_coeff=10 --fft=true
 
-# compute mean and std for strand PCA coefficients
-python src/preprocess.py --process_fn=normalize --indir=data/neural-textures/high-res --outdir=data/neural-textures
+# # compute mean and std for strand PCA coefficients
+# python src/preprocess.py --process_fn=normalize --indir=data/neural-textures/high-res --outdir=data/neural-textures
