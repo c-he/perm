@@ -87,6 +87,30 @@ The above code will use `torch_utils` and `dnnlib` to load the downloaded pickle
 
 Please refer to [`gen_samples.py`](src/gen_samples.py) for complete code example.
 
+### Generating hairstyles
+
+To generate 3D hairstyles using our pre-trained model, run:
+```bash
+python src/gen_samples.py --outdir=out --model={model_folder} --roots=data/roots/rootPositions_10k.txt --head_mesh=data/head.obj --seeds=0-99 --trunc=0.8
+```
+Here `model_folder` should be replaced with the folder containing all `*.pkl` checkpoints. The hairstyles shown in Fig. 5 of our supplemental are generated using seeds `0,14,20,71,78,79,87,88,89,92`.
+
+### Hair parameterization
+
+To fit perm parameters to a given 3D hairstyle, run:
+```bash
+python src/projector.py --model={model_folder} --target={target_data} --num-steps-warmup=1000 --num-steps=9000 --outdir=fitting --head_mesh=data/head.obj --save-video=false
+```
+Here `target_data` refers to the processed hair geomerty texture stored in `*.npz` format, which will be mentioned below.
+
+### Hairstyle interpolation
+
+To interpolate between two given hairstyles, run:
+```bash
+python src/style_mixing.py --model={model_folder} --hair1={hair1_data} --hair2={hair2_data} --steps=5 --outdir=lerp --head_mesh=data/head.obj --interp_mode={full, theta, beta}
+```
+Here `hair1_data` and `hair2_data` correspond to the two processed hair geomerty textures, `steps` controls the number of interpolation steps, and `interp_mode` supports different granularities such as theta only, beta only, and joint interpolation. 
+
 ## Datasets
 
 ### USC-HairSalon
@@ -102,18 +126,36 @@ bash scripts/process-usc-hair.sh
 This script will:
 1. horizontally flip each hairstyle to further augment the dataset.
 2. solve PCA blend shapes for hair strands.
-3. fit neural textures with PCA coefficients (nearest interpolation produces better results than bilinear when sampled with different hair roots).
-4. compress neural textures from `256x256` to `32x32` to obtain textures for **guide strands**.
+3. fit geomerty textures with PCA coefficients (nearest interpolation produces better results than bilinear when sampled with different hair roots).
+4. compress geomerty textures from `256x256` to `32x32` to obtain textures for **guide strands**.
 
-The PCA fitting process has a certain demand on the memory size. In our experiments, 64GB memory should be enough for all USC-HairSalon strands. Our processed data can be downloaded from **XXX**.
+The PCA fitting process has a certain demand on the memory size. In our experiments, 64GB memory should be enough for all USC-HairSalon strands. The fitted geometry textures are stored as `*.npz` files, which include:
+- `texture`: the texture itself, CHW.
+- `mask`: baldness map of the hairstyle, 1HW.
+- `roots`: 2D roots of strands in the uv space.
+
+Al processed data can be downloaded from **XXX**.
 
 ## Training
 
-In this directory, run:
+**StyleGAN2:** To train a StyleGAN2 backbone for our guide textures, run:
 ```bash
-bash scripts/train.sh
+bash scripts/train-rawtex.sh
 ```
-This script will train a StyleGAN2 as our parametric model for the fitted neural textures.
+
+**U-Net:** To train a U-Net as our superresolution module, run:
+```bash
+bash scripts/train-superres.sh
+```
+
+**VAE:** To train a VAE backbone for our residual textures, run:
+```bash
+bash scripts/train-texres.sh
+```
+
+## Evaluation
+
+We report the mean position error (pos. err.) and mean curvature error (cur. err.) as the measurement of our hair reconstruction quality. The usage of these two metrics can be found in `src/eval_blend_shapes.py`.
 
 ## Rendering
 
@@ -125,7 +167,7 @@ Most of the figures in our paper are rendered using [Hair Tool](https://josecons
 - Our code structure is based on [EG3D](https://github.com/NVlabs/eg3d).
 - Our naming convention and model formulation are heavily influenced by [SMPL](https://smpl.is.tue.mpg.de/).
 
-**Huge thanks to these great open-source projects!**
+**Huge thanks to the support of our vendors and these great open-source projects!**
 
 ## Citation
 
