@@ -41,7 +41,7 @@
 
 ## TODO
 
-- [ ] Release cleaned codebase.
+- [x] Release cleaned codebase.
 - [ ] Release pre-trained checkpoints.
 - [ ] Release augmented USC-HairSalon that contains ~20k hairstyles.
 - [ ] Release fitted Perm parameters for the original 343 hairstyles in USC-HairSalon.
@@ -62,32 +62,50 @@ conda activate perm
 pip install -r requirements.txt --no-cache-dir
 ```
 
+### Pre-trained models
+
+Pre-trained networks can be downloaded from **XXX**, which are stored as `*.pkl` files following the format of EG3D.
+
+You can use pre-trained networks in your own Python code as follows:
+```python
+from hair.hair_models import Perm
+
+device = torch.device('cuda')
+# main hair model
+hair_model = Perm(model_path=model_path, head_mesh=head_mesh, scalp_bounds=scalp_bounds).eval().requires_grad_(False).to(device)
+# pre-defined root set
+roots, _ = hair_model.hair_roots.load_txt(roots)
+roots = roots.to(device)
+# output dictionary that contains:
+# 1. "image": hair geometry texture, NCHW.
+# 2. "strands": sampled and decoded strands.
+# 3. "guide_strands": decoded guide strands.
+# 4. "theta" and "beta": input or randomly sampled parameters.
+out = hair_model(roots=roots.unsqueeze(0), trunc=truncation_psi, trunc_cutoff=truncation_cutoff, random_seed=seed)
+```
+The above code will use `torch_utils` and `dnnlib` to load the downloaded pickle files, which does not require source code for the networks themselves — their class definitions are loaded from the pickle via `torch_utils.persistence`.
+
+Please refer to [`gen_samples.py`](src/gen_samples.py) for complete code example.
+
+## Datasets
+
 ### USC-HairSalon
 
-Since the [original link](http://www-scf.usc.edu/~liwenhu/SHM/database.html) of USC-HairSalon has been deprecated for a while, you can obtain a copy of it from this [Google Drive link](https://drive.google.com/file/d/118ZwW_pDw9IvnoTndHMk4wLZcPb0cw4v/view). We augment these data using the style mixing algorithm described in [HairNet](https://github.com/papagina/HairNet_DataSetGeneration) to enlarge the dataset size to ~10k hairstyles and make sure each strand has 100 sample points.
+Since the [original link](http://www-scf.usc.edu/~liwenhu/SHM/database.html) of USC-HairSalon has been deprecated for a while, you can obtain a copy of it from **XXX**. **These data are registered to `data/head.obj` and preprocessed to make sure each strand has 100 sample points**. We then augment these data using the style mixing algorithm described in [HairNet](https://github.com/papagina/HairNet_DataSetGeneration) to enlarge the dataset size to ~10k hairstyles. The augmented dataset can be downloaded from **XXX**. Please download these two datasets to `data/usc-hair` and `data/usc-hair-mix`, or create symbolic links under the `data` directory.
 
-### Data Processing
+### Data processing
 
-#### Strand Resampling
-
-First, we need to use **Stylist** to resample all hair models to make sure each strand has 100 sample points. In stylist directory, run:
-```bash
-conda env create -f environment.yml
-conda activate perm
-pip install -r requirements.txt --no-cache-dir
-```
-
-#### Processing hair data necessary for Perm
-
-In this directory, run:
+To generate necessary data for perm, please use the following script:
 ```bash
 bash scripts/process-usc-hair.sh
 ```
 This script will:
-1. horizontally flip each hair model to augment the dataset.
+1. horizontally flip each hairstyle to further augment the dataset.
 2. solve PCA blend shapes for hair strands.
 3. fit neural textures with PCA coefficients (nearest interpolation produces better results than bilinear when sampled with different hair roots).
 4. compress neural textures from `256x256` to `32x32` to obtain textures for **guide strands**.
+
+The PCA fitting process has a certain demand on the memory size. In our experiments, 64GB memory should be enough for all USC-HairSalon strands. Our processed data can be downloaded from **XXX**.
 
 ## Training
 
@@ -103,6 +121,7 @@ Most of the figures in our paper are rendered using [Hair Tool](https://josecons
 
 ## Acknowledgements
 
+- Our head mesh is made by [Pinscreen](https://www.pinscreen.com/).
 - Our code structure is based on [EG3D](https://github.com/NVlabs/eg3d).
 - Our naming convention and model formulation are heavily influenced by [SMPL](https://smpl.is.tue.mpg.de/).
 

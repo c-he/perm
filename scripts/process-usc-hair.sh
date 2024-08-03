@@ -18,6 +18,3 @@ python src/preprocess.py --process_fn=guide_strands --indir=data/neural-textures
 
 # compute mean and std for strand PCA coefficients
 python src/preprocess.py --process_fn=normalize --indir=data/neural-textures/high-res --outdir=data/neural-textures
-
-# transform strands to the canonical space defined by each guide strand
-# python src/preprocess.py --process_fn=canonical --indir=data/neural-textures --outdir=data/usc-hair-canonical --interp_mode=nearest --bsdir=data/blend-shapes/fft-strands-blend-shapes.npz --fft=true
