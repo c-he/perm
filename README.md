@@ -43,8 +43,8 @@
 
 - [x] Release cleaned codebase.
 - [x] Release pre-trained checkpoints.
+- [x] Release fitted Perm parameters for the original 343 hairstyles in USC-HairSalon.
 - [ ] Release augmented USC-HairSalon that contains ~20k hairstyles.
-- [ ] Release fitted Perm parameters for the original 343 hairstyles in USC-HairSalon.
 - [ ] Release checkpoints trained on more curly data (v2).
 - [ ] Release a reimplementation of our single-view reconstruction pipeline with a public license.
 
@@ -102,6 +102,11 @@ To fit perm parameters to a given 3D hairstyle, run:
 python src/projector.py --model={model_folder} --target={target_data} --num-steps-warmup=1000 --num-steps=9000 --outdir=fitting --head_mesh=data/head.obj --save-video=false
 ```
 Here `target_data` refers to the processed hair geomerty texture stored in `*.npz` format, which will be mentioned below.
+
+We fitted perm parameters to all 343 USC-HairSalon hairstyles, which can be downloaded from this [OneDrive link](https://yaleedu-my.sharepoint.com/:u:/g/personal/chengan_he_yale_edu/ESmIHlb9IN5NlyRsQnl94mQBmiHEI7gR1tgpFPsEMJomqQ?e=GcrDRi). To convert these parameters back to 3D hairstyles, run:
+```bash
+python src/gen_from_parameters.py --model={model_folder} --params={npz_param_file} --outdir=fitting/usc-hair --head_mesh data/head.obj
+```
 
 ### Hairstyle interpolation
 
