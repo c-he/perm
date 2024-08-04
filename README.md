@@ -44,7 +44,8 @@
 - [x] Release cleaned codebase.
 - [x] Release pre-trained checkpoints.
 - [x] Release fitted Perm parameters for the original 343 hairstyles in USC-HairSalon.
-- [ ] Release augmented USC-HairSalon that contains ~20k hairstyles.
+- [x] Release augmented USC-HairSalon used by HairNet (~10k hairstyles).
+- [ ] Release processed USC-HairSalon used for perm training (~20k hairstyles).
 - [ ] Release checkpoints trained on more curly data (v2).
 - [ ] Release a reimplementation of our single-view reconstruction pipeline with a public license.
 
@@ -120,11 +121,13 @@ Here `hair1_data` and `hair2_data` correspond to the two processed hair geomerty
 
 ### USC-HairSalon
 
-Since the [original link](http://www-scf.usc.edu/~liwenhu/SHM/database.html) of USC-HairSalon has been deprecated for a while, you can obtain a copy of it from **[TODO]**. **These data are registered to `data/head.obj` and preprocessed to make sure each strand has 100 sample points**. We then augment these data using the style mixing algorithm described in [HairNet](https://github.com/papagina/HairNet_DataSetGeneration) to enlarge the dataset size to ~10k hairstyles. The augmented dataset can be downloaded from **[TODO]**. Please download these two datasets to `data/usc-hair` and `data/usc-hair-mix`, or create symbolic links under the `data` directory.
+The original USC-HairSalon can be downloaded from [Liwen's website](https://huliwenkidkid.github.io/liwenhu.github.io/). We first augment these data using the style mixing algorithm described in [HairNet](https://github.com/papagina/HairNet_DataSetGeneration) to enlarge the dataset size to ~10k hairstyles, which can be downloaded from this [GoogleDrive link](https://drive.google.com/drive/folders/1_fGCanBKve4npycWXQSnU9nolqh1ygbs?usp=sharing). Please download these two datasets to `data/usc-hair` and `data/usc-hair-mix`, or create symbolic links under the `data` directory.
 
 ### Data processing
 
-To generate necessary data for perm, please use the following script:
+Before generating necessary data for perm, **we first register all data to [data/head.obj](data/head.obj) and preprocess them to make sure each strand has 100 sample points**.
+
+In the next step, run the following script:
 ```bash
 bash scripts/process-usc-hair.sh
 ```
@@ -139,7 +142,7 @@ The PCA fitting process has a certain demand on the memory size. In our experime
 - `mask`: baldness map of the hairstyle, 1HW.
 - `roots`: 2D roots of strands in the uv space.
 
-Al processed data can be downloaded from **[TODO]**.
+Though we cannot share our scripts for hair registration and cleaning, we release all the processed data from the above pipeline (registered & cleaned hairstyles, PCA blend shapes, fitted geometry textures), which can be downloaded from **[TODO]**.
 
 ## Training
 
@@ -179,7 +182,7 @@ python src/preprocess.py --process_fn=convert --indir={input_data_folder} --outd
 
 ## Acknowledgements
 
-- Our head mesh is made by [Pinscreen](https://www.pinscreen.com/).
+- Our head mesh is created by [Avatar Neo](https://avatarneo.com/).
 - Our code structure is based on [EG3D](https://github.com/NVlabs/eg3d).
 - Our naming convention and model formulation are heavily influenced by [SMPL](https://smpl.is.tue.mpg.de/).
 
