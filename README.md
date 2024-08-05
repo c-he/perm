@@ -27,6 +27,7 @@
     <br>
         <a href="https://arxiv.org/abs/2407.19451"><img src="https://img.shields.io/badge/arXiv-2407.19451-b31b1b" height=22.5 alt='Paper PDF'></a>
         <a href='https://cs.yale.edu/homes/che/projects/perm/'><img src="https://img.shields.io/badge/Project_Page-perm-green" height=22.5 alt='Project Page'></a>
+        <a href='https://zhouyisjtu.github.io/project_hair/hair20k.html'><img src="https://img.shields.io/badge/Database-Hair20k-yellow" height=22.5 alt='Project Page'></a>
     <br>
     <b><sup>1</sup> Yale University &nbsp; | &nbsp; <sup>2</sup> Adobe Research &nbsp; | &nbsp; <sup>3</sup> CAU &nbsp; | &nbsp; <sup>4</sup> KAUST &nbsp; | &nbsp; <sup>5</sup> Nanjing University of Science and Technology </b>
   </p>
