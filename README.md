@@ -25,9 +25,9 @@
     <a href="https://zhouyisjtu.github.io/"><strong>Yi Zhou<sup>2</sup></strong></a>
     <br>
     <br>
-        <a href="https://arxiv.org/abs/2407.19451"><img src="https://img.shields.io/badge/arXiv-2407.19451-b31b1b" height=22.5 alt='Paper PDF'></a>
+        <a href="https://arxiv.org/abs/2407.19451"><img src="https://img.shields.io/badge/arXiv-2407.19451-b31b1b" height=22.5 alt='arXiv'></a>
         <a href='https://cs.yale.edu/homes/che/projects/perm/'><img src="https://img.shields.io/badge/Project_Page-perm-green" height=22.5 alt='Project Page'></a>
-        <a href='https://zhouyisjtu.github.io/project_hair/hair20k.html'><img src="https://img.shields.io/badge/Database-Hair20k-yellow" height=22.5 alt='Project Page'></a>
+        <a href='https://zhouyisjtu.github.io/project_hair/hair20k.html'><img src="https://img.shields.io/badge/Dataset-Hair20k-yellow" height=22.5 alt='Dataset'></a>
     <br>
     <b><sup>1</sup> Yale University &nbsp; | &nbsp; <sup>2</sup> Adobe Research &nbsp; | &nbsp; <sup>3</sup> CAU &nbsp; | &nbsp; <sup>4</sup> KAUST &nbsp; | &nbsp; <sup>5</sup> Nanjing University of Science and Technology </b>
   </p>
@@ -45,8 +45,8 @@
 - [x] Release cleaned codebase.
 - [x] Release pre-trained checkpoints.
 - [x] Release fitted Perm parameters for the original 343 hairstyles in USC-HairSalon.
-- [x] Release augmented USC-HairSalon used by HairNet (~10k hairstyles).
-- [ ] Release processed USC-HairSalon used for perm training (~20k hairstyles).
+- [x] Release our training set Hair20k.
+- [ ] Release processed data used for perm training.
 - [ ] Release checkpoints trained on more curly data (v2).
 - [ ] Release a reimplementation of our single-view reconstruction pipeline with a public license.
 
@@ -120,15 +120,13 @@ Here `hair1_data` and `hair2_data` correspond to the two processed hair geomerty
 
 ## Datasets
 
-### USC-HairSalon
+### Hair20k
 
-The original USC-HairSalon can be downloaded from [Liwen's website](https://huliwenkidkid.github.io/liwenhu.github.io/). We first augment these data using the style mixing algorithm described in [HairNet](https://github.com/papagina/HairNet_DataSetGeneration) to enlarge the dataset size to ~10k hairstyles, which can be downloaded from this [GoogleDrive link](https://drive.google.com/drive/folders/1_fGCanBKve4npycWXQSnU9nolqh1ygbs?usp=sharing). Please download these two datasets to `data/usc-hair` and `data/usc-hair-mix`, or create symbolic links under the `data` directory.
+We name our training set Hair20k, an augmented version of [USC-HairSalon](https://huliwenkidkid.github.io/liwenhu.github.io/) that contains ~20k hairstyles. More information can be found on this [dataset page](https://zhouyisjtu.github.io/project_hair/hair20k.html). Please download the data aligned with the AVATAR NEO head to `data/usc-hair` and `data/usc-hair-mix`, or create symbolic links under the `data` directory.
 
 ### Data processing
 
-Before generating necessary data for perm, **we first register all data to [data/head.obj](data/head.obj) and preprocess them to make sure each strand has 100 sample points**.
-
-In the next step, run the following script:
+To generate necessary data for perm, run the following script:
 ```bash
 bash scripts/process-usc-hair.sh
 ```
@@ -143,7 +141,7 @@ The PCA fitting process has a certain demand on the memory size. In our experime
 - `mask`: baldness map of the hairstyle, 1HW.
 - `roots`: 2D roots of strands in the uv space.
 
-Though we cannot share our scripts for hair registration and cleaning, we release all the processed data from the above pipeline (registered & cleaned hairstyles, PCA blend shapes, fitted geometry textures), which can be downloaded from **[TODO]**.
+The processed data from the above pipeline (PCA blend shapes, fitted geometry textures) can be downloaded from **[TODO]**.
 
 ## Training
 
@@ -183,7 +181,7 @@ python src/preprocess.py --process_fn=convert --indir={input_data_folder} --outd
 
 ## Acknowledgements
 
-- Our head mesh is created by [Avatar Neo](https://avatarneo.com/).
+- Our head mesh is created by [AVATAR NEO](https://avatarneo.com/).
 - Our code structure is based on [EG3D](https://github.com/NVlabs/eg3d).
 - Our naming convention and model formulation are heavily influenced by [SMPL](https://smpl.is.tue.mpg.de/).
 
