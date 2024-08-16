@@ -193,8 +193,8 @@ If you found this code or paper useful, please consider citing:
 ```bibtex
 @article{he2024perm,
     title={Perm: A Parametric Representation for Multi-Style 3D Hair Modeling},
-    author={Chengan He and Xin Sun and Zhixin Shu and Fujun Luan and S\"{o}ren Pirk and Jorge Alejandro Amador Herrera and Dominik L. Michels and Tuanfeng Y. Wang and Meng Zhang and Holly Rushmeier and Yi Zhou},
-    journal={arXiv preprint arXiv::2407.19451},
+    author={He, Chengan and Sun, Xin and Shu, Zhixin and Luan, Fujun and Pirk, S\"{o}ren and Herrera, Jorge Alejandro Amador and Michels, Dominik L and Wang, Tuanfeng Y and Zhang, Meng and Rushmeier, Holly and Zhou, Yi},
+    journal={arXiv preprint arXiv:2407.19451},
     year={2024}
 }
 ```
