@@ -181,7 +181,7 @@ python src/preprocess.py --process_fn=convert --indir={input_data_folder} --outd
 
 ## Acknowledgements
 
-- Our head mesh is created by [AVATAR NEO](https://avatarneo.com/).
+- Our head mesh is created by [AVATAR NEO](https://avatarneo.com/) and can be downloaded from [this link](https://www.avatarneo.com/PinscreenGenericHeadModel.obj). Please rename it to `head.obj` and put it under `data` if you use our provided scripts directly.
 - Our code structure is based on [EG3D](https://github.com/NVlabs/eg3d).
 - Our naming convention and model formulation are heavily influenced by [SMPL](https://smpl.is.tue.mpg.de/).
 
