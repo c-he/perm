@@ -184,3 +184,23 @@ fitting/
 *.data
 
 src/test*.py
+
+# Claude Code settings
+.claude/*
+
+# Testing artifacts (additional to existing coverage entries)
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
