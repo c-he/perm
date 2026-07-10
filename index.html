@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Perm: A Parametric Representation for Multi-Style 3D Hair Modeling</title>
+
+    <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+
+    <link rel="stylesheet" href="./static/css/bulma.min.css">
+    <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
+    <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
+    <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+    <link rel="stylesheet" href="./static/css/index.css">
+
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script defer src="./static/js/fontawesome.all.min.js"></script>
+    <script src="./static/js/bulma-carousel.min.js"></script>
+    <script src="./static/js/bulma-slider.min.js"></script>
+    <script src="./static/js/macros.js"></script>
+</head>
+
+<body>
+    <section class="hero">
+        <div class="hero-body">
+            <div class="container is-max-desktop">
+                <div class="columns is-centered">
+                    <div class="column has-text-centered">
+                        <h1 class="title is-2 publication-title"><span class="dnerf">Perm</span>: A Parametric Representation for Multi-Style 3D Hair Modeling</h1>
+                        <div class="is-size-5 publication-authors">
+                            <span class="author-block">
+                                <script>getConst("me");</script><sup>1</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("xinsun");</script><sup>2</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("zshu");</script><sup>2</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("fluan");</script><sup>2</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("soren");</script><sup>3</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("alejandro");</script><sup>4</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("dmichels");</script><sup>4</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("yangtwan");</script><sup>2</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("mengzephyr");</script><sup>5</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("holly");</script><sup>1</sup>,
+                            </span>
+                            <span class="author-block">
+                                <script>getConst("yizho");</script><sup>2</sup>
+                            </span>
+                        </div>
+
+                        <div class="is-size-6 publication-authors">
+                            <span class="author-block"><sup>1</sup>Yale University,</span>
+                            <span class="author-block"><sup>2</sup>Adobe Research,</span>
+                            <span class="author-block"><sup>3</sup>CAU,</span>
+                            <span class="author-block"><sup>4</sup>KAUST,</span>
+                            <span class="author-block"><sup>5</sup>NJUST</span>
+                        </div>
+
+                        <div class="is-size-5 column has-text-centered">
+                            ICLR 2025 <b>(Spotlight)</b>
+                        </div>
+
+                        <div class="column has-text-centered">
+                            <div class="publication-links">
+                                <!-- PDF Link. -->
+                                <span class="link-block">
+                                    <a target="_blank" href="https://arxiv.org/pdf/2407.19451" class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="ai ai-arxiv"></i>
+                                        </span>
+                                        <span>arXiv</span>
+                                    </a>
+                                </span>
+                                <!-- Supplemental Link. -->
+                                <!-- <span class="link-block">
+                                    <a target="_blank" href="supp.pdf" class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-file-pdf"></i>
+                                        </span>
+                                        <span>Supp.</span>
+                                    </a>
+                                </span> -->
+                                <!-- Code Link. -->
+                                <span class="link-block">
+                                    <a target="_blank" href="https://github.com/c-he/perm" class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fab fa-github"></i>
+                                        </span>
+                                        <span>Code</span>
+                                    </a>
+                                </span>
+                                <!-- Dataset Link. -->
+                                <span class="link-block">
+                                    <a target="_blank" href="https://zhouyisjtu.github.io/project_hair/hair20k.html" class="external-link button is-normal is-rounded is-dark">
+                                        <span class="icon">
+                                            <i class="fas fa-database"></i>
+                                        </span>
+                                        <span>Hair20k</span>
+                                    </a>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-desktop">
+            <!-- Abstract. -->
+            <div class="columns is-centered has-text-centered">
+                <div class="column is-four-fifths">
+                    <h2 class="title is-3">Abstract</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            We present <span class="dnerf">Perm</span>, a learned parametric representation of human 3D hair designed to facilitate various hair-related applications. Unlike previous
+                            work that jointly models the global hair structure and local curl patterns, we propose to disentangle them using a PCA-based strand representation in the frequency domain,
+                            thereby allowing more precise editing and output control. Specifically, we leverage our strand representation to fit and decompose hair geometry textures into low- to
+                            high-frequency hair structures, termed guide textures and residual textures, respectively. These decomposed textures are later parameterized with different generative
+                            models, emulating common stages in the hair grooming process. We conduct extensive experiments to validate the architecture design of <span class="dnerf">Perm</span>, and
+                            finally deploy the trained model as a generic prior to solve task-agnostic problems, further showcasing its flexibility and superiority in tasks such as single-view hair
+                            reconstruction, hairstyle editing, and hair-conditioned image generation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <!--/ Abstract. -->
+        </div>
+    </section>
+
+    <section class="hero teaser">
+        <div class="container is-max-desktop">
+            <div class="hero-body">
+                <img src="assets/perm.png" class="center" />
+            </div>
+        </div>
+    </section>
+
+    <section class="section">
+        <div class="container is-max-desktop">
+            <!-- Overview. -->
+            <div class="columns is-centered">
+                <div class="column is-full-width">
+                    <h2 class="title is-3">Overview</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            We design a <b>parametric model of 3D human hair</b> that is designed with disentangled parameters \(\vec{\theta}\) and \(\vec{\beta}\) to respectively control the global
+                            haircut types (represented as guide strands) and local curl patterns (represented as wisps).
+                        </p>
+                        <div class="column is-centered">
+                            <img src="assets/teaser.png" class="center" />
+                        </div>
+                        <p>
+                            The key component is a <b>PCA-based strand representation</b> in the frequency domain, which we found effective to represent the variation of different hair strands and
+                            facilitate hairstyle decomposition. Based on this strand representation, we store each hairstyle as a texture map and decompose it into different frequency components.
+                            Finally we train different generative models to parameterize each type of the decomposed textures.
+                        </p>
+                    </div>
+                    <br />
+                </div>
+            </div>
+            <!--/ Overview. -->
+
+
+            <!-- Strand Representation. -->
+            <div class="columns is-centered">
+                <div class="column is-full-width">
+                    <h2 class="title is-3">Strand Representation</h2>
+                    <div class="content has-text-justified">
+                        <p>
+                            Our strand representation is inspired by the prevalent PCA-based linear blendshapes in digital human modeling, but solved in the frequency domain. Computed on all strands
+                            from USC-HairSalon, we found ~20 principal components are able to explain 100% of the variance in the training set, but increasing their number makes the final
+                            representation generalize better to unseen data.
+                        </p>
+                        <div class="column is-centered">
+                            <img src="assets/strand-pca-1.png" class="center" />
+                        </div>
+                        <p>
+                            These PCA blendshapes are proved to be explainable, as they correspond directly to frequency bands. Based on this intuition, we can easily smooth a hairstyle, or transfer
+                            its strand-level details to a different hairstyle while maintaining a similar haircut.
+                        </p>
+                        <div class="column is-centered">
+                            <img src="assets/strand-pca-2.png" class="center" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--/ Strand Representation. -->
+
+            <!-- Applications. -->
+            <div class="columns is-centered">
+                <div class="column is-full-width">
+                    <h2 class="title is-3">Applications</h2>
+
+                    <!-- 3D Hair Parameterization. -->
+                    <h3 class="title is-4">3D Hair Parameterization</h3>
+                    <div class="content has-text-justified">
+                        <p>
+                            Similar to <a target="_blank" href="https://amass.is.tue.mpg.de/">AMASS</a>, we curated a parametric dataset of 3D hairstyles from USC-HairSalon, which contains fitted
+                            parameters \(\vec{\theta}\) and \(\vec{\beta}\) from the 3D strand input. Data from other resources could be integrated as well in this unified format.
+                        </p>
+                        <div class="column is-centered">
+                            <img src="assets/fitting.jpg" class="center" />
+                        </div>
+                    </div>
+                    <br />
+                    <!--/ 3D Hair Parameterization. -->
+
+                    <!-- Single-view Hair Reconstruction. -->
+                    <h3 class="title is-4">Single-view Hair Reconstruction</h3>
+                    <div class="content has-text-justified">
+                        <p>
+                            Here we show the example of single-view hair reconstruction, and compare our results with <a target="_blank" href="https://dl.acm.org/doi/10.1145/3355089.3356511">[Yang et
+                                al. 2019]</a> and <a target="_blank" href="https://paulyzheng.github.io/research/hairstep/">HairStep</a>.
+                        <div class="column is-centered">
+                            <img src="assets/single-view-1.png" class="center" />
+                            <img src="assets/single-view-2.png" class="center" />
+                        </div>
+                        </p>
+                    </div>
+                    <!--/ Single-view Hair Reconstruction. -->
+
+                    <!-- Perm Parameter Editing. -->
+                    <h3 class="title is-4"><span class="dnerf">Perm</span> Parameter Editing</h3>
+                    <div class="content has-text-justified">
+                        <p>
+                            Here we show the example of <span class="dnerf">Perm</span> parameter editing, where we interpolate different parameters to edit the output with different granularity.
+                        </p>
+                        <div class="column is-centered">
+                            <img src="assets/interp.png" class="center" />
+                        </div>
+                    </div>
+                    <!--/ Perm Parameter Editing. -->
+
+                    <!-- Hair-conditioned Image Generation. -->
+                    <h3 class="title is-4">Hair-conditioned Image Generation</h3>
+                    <div class="content has-text-justified">
+                        <p>
+                            Here we show the example of conditional image synthesis using 3D hairstyles generated by <span class="dnerf">Perm</span> as input.
+                        <div class="column is-centered">
+                            <img src="assets/hair-cond.png" class="center" />
+                        </div>
+                        </p>
+                    </div>
+                    <!--/ Hair-conditioned Image Generation. -->
+
+                </div>
+            </div>
+            <!--/ Applications. -->
+        </div>
+    </section>
+
+    <!-- Related Projects -->
+    <section class="section" id="Related Projects">
+        <div class="container is-max-desktop content">
+            <h2 class="title">Related Projects</h2>
+            * indicates equal contribution.
+            <ol>
+                <li>
+                    <b>Digital Salon: An AI and Physics-Driven Tool for 3D Hair Grooming and Simulation</b>
+                    <br>
+                    Chengan He*, Jorge Alejandro Amador Herrera*, Yi Zhou*, Zhixin Shu, Xin Sun, Yao Feng, Sören Pirk, Dominik L. Michels, Meng Zhang, Tuanfeng Y. Wang, Holly Rushmeier
+                    <br>
+                    <i>SIGGRAPH Asia 2024 Real-Time Live!</i>
+                    <script>project("https://digital-salon.github.io/");</script>
+                    <script>code("https://github.com/digital-salon/Digital-Salon");</script>
+                </li>
+
+                <li>
+                    <b>Augmented Mass-Spring Model for Real-Time Dense Hair Simulation</b>
+                    <br>
+                    Jorge Alejandro Amador Herrera, Yi Zhou, Xin Sun, Zhixin Shu, Chengan He, Sören Pirk, Dominik L. Michels
+                    <br>
+                    <i>arXiv</i>
+                    <script>paper("https://arxiv.org/pdf/2412.17144");</script>
+                    <script>project("https://agrosamad.github.io/AMS/");</script>
+                </li>
+            </ol>
+        </div>
+    </section>
+    <!--/ Related Projects -->
+
+    <section class="section" id="BibTeX">
+        <div class="container is-max-desktop content">
+            <h2 class="title">BibTeX</h2>
+            <pre><code>@inproceedings{he2025perm,
+    title={Perm: A Parametric Representation for Multi-Style 3D Hair Modeling},
+    author={He, Chengan and Sun, Xin and Shu, Zhixin and Luan, Fujun and Pirk, S\"{o}ren and Herrera, Jorge Alejandro Amador and Michels, Dominik L. and Wang, Tuanfeng Y. and Zhang, Meng and Rushmeier, Holly and Zhou, Yi},
+    booktitle={International Conference on Learning Representations},
+    year={2025}
+}</code></pre>
+        </div>
+    </section>
+
+
+    <footer class="footer">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-8">
+                    <div class="content">
+                        <p>
+                            This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative
+                                Commons Attribution-ShareAlike 4.0 International License</a>.
+                        </p>
+                        <p>
+                            This webpage is built with the template from <a href="https://github.com/nerfies/nerfies.github.io">NeRFies</a>. We sincerely thank <a href="https://keunhong.com/">Keunhong
+                                Park</a> for developing and open-sourcing this template.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+
+</html>
